@@ -1,0 +1,24 @@
+package $!{package}.$!{moduleName}.controller;
+
+import com.zx.util.controller.BaseControllerModel;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import io.swagger.annotations.Api;
+import lombok.extern.slf4j.Slf4j;
+import $!{package}.$!{moduleName}.entity.$!{className}Entity;
+
+/**
+ * <p>
+ * $!{comments}
+ * </p>
+ *
+ * @author $!{author}
+ * @date Created in $!{datetime}
+ */
+@Slf4j
+@RestController
+@RequestMapping("/$!{moduleName}")
+@Api(description = "$!{className}Controller", tags = {"$!{comments}"})
+public class $!{className}Controller extends BaseControllerModel<$!{className}Entity, $!{className}Entity> {
+
+}

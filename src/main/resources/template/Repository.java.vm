@@ -1,0 +1,18 @@
+package $!{package}.$!{moduleName}.repository;
+
+import $!{package}.$!{moduleName}.entity.$!{className}Entity;
+import com.zx.util.service.BaseRepository;
+import org.springframework.stereotype.Repository;
+
+/**
+ * <p>
+ * $!{comments}
+ * </p>
+ *
+ * @author $!{author}
+ * @date Created in $!{datetime}
+ */
+@Repository
+public interface $!{className}Repository extends BaseRepository<$!{className}Entity, Long> {
+
+}
