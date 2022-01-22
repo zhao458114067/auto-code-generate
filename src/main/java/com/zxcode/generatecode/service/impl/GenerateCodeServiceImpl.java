@@ -6,6 +6,7 @@ import cn.hutool.db.Db;
 import cn.hutool.db.Entity;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zx.util.util.DynamicVO;
+import com.zx.util.util.FileUtil;
 import com.zxcode.generatecode.constants.Constants;
 import com.zxcode.generatecode.controller.vo.GenerateConfigVO;
 import com.zxcode.generatecode.controller.vo.TableRequestVO;
@@ -17,7 +18,10 @@ import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,8 +49,8 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
     @SneakyThrows
     public PageVO<Entity> listTables(TableRequestVO request) {
         DynamicVO dynamicVO = DynamicVO.parseMap(this.queryTable(request));
-        List<Entity> tables = dynamicVO.getToObject("tables");
-        BigDecimal count = dynamicVO.getToObject("tablesCount");
+        List<Entity> tables = dynamicVO.getToObject("tables" );
+        BigDecimal count = dynamicVO.getToObject("tablesCount" );
         PageVO<Entity> pageResult = new PageVO<>(count.longValue(), request.getCurrentPage() - 1, request.getPageSize(), tables);
         return pageResult;
     }
@@ -59,13 +63,20 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
      */
     @Override
     public byte[] generatorCode(GenerateConfigVO generateConfigVO) throws SQLException {
+        for (Map.Entry<String, String> entry : Constants.GENERATE_FFILE_MAP.entrySet()) {
+            File file = CodeGenerateUtil.getResourcesFile("template/" + entry.getKey());
+            if (!file.exists()) {
+                FileUtil.createFiles(file.getPath());
+                FileUtil.write(file, entry.getValue(), "UTF-8" );
+            }
+        }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ZipOutputStream zip = new ZipOutputStream(outputStream);
 
         //查询表信息
         List<Entity> tables = null;
         try {
-            tables = DynamicVO.parseMap(queryTable(generateConfigVO.getRequest())).getToObject("tables");
+            tables = DynamicVO.parseMap(queryTable(generateConfigVO.getRequest())).getToObject("tables" );
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -73,8 +84,12 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
         //查询列信息
         List<Entity> columns = queryColumns(generateConfigVO.getRequest());
         //生成代码
-        CodeGenerateUtil.generatorCode(generateConfigVO, tables.get(0), columns, zip);
+        new CodeGenerateUtil().generatorCode(generateConfigVO, tables.get(0), columns, zip);
         IoUtil.close(zip);
+        for (Map.Entry<String, String> entry : Constants.GENERATE_FFILE_MAP.entrySet()) {
+            File file = CodeGenerateUtil.getResourcesFile("template/" + entry.getKey());
+            FileUtil.deleteFile(file);
+        }
         return outputStream.toByteArray();
     }
 
@@ -86,7 +101,7 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
         String paramSql = "";
         Map<String, Object> result = new HashMap<>(2);
 
-        String schemaName = request.getUrl().split("/")[1].split("\\?")[0];
+        String schemaName = request.getUrl().split("/" )[1].split("\\?" )[0];
 
         //创建datasource
         HikariDataSource dataSource = DataBaseUtil.createDataSource(request);
@@ -101,7 +116,7 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
         }
         String queryTableSql = null;
 
-        String dataBaseType = request.getPrepend().split(":")[1];
+        String dataBaseType = request.getPrepend().split(":" )[1];
         switch (dataBaseType) {
             //Mysql
             case Constants.MYSQL:
@@ -144,14 +159,14 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
         Db db = new Db(dataSource);
 
         //数据库名字
-        String schemaName = request.getUrl().split("/")[1].split("\\?")[0];
+        String schemaName = request.getUrl().split("/" )[1].split("\\?" )[0];
 
         //表的名字
         String tableName = request.getTablename();
 
         List<Object> params = new ArrayList<>();
         //数据库类型
-        String dataBaseType = request.getPrepend().split(":")[1];
+        String dataBaseType = request.getPrepend().split(":" )[1];
         String queryColumnSql = null;
         switch (dataBaseType) {
             //Mysql
@@ -161,6 +176,10 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
                         "\tdata_type datatype,\n" +
                         "\tcolumn_comment columnComment,\n" +
                         "\tcolumn_key columnKey,\n" +
+                        "\tcase\n" +
+                        "\t\twhen is_nullable = 'NO' then 'false'\n" +
+                        "\t\telse 'true'\n" +
+                        "\tend as nullAbled,\n" +
                         "\textra\n" +
                         "from\n" +
                         "\tinformation_schema.columns\n" +
@@ -174,18 +193,20 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
             //Postgresql
             case Constants.POSTGRESQL:
                 queryColumnSql = "select\n" +
-                        "\ta.attname columnName,\t\n" +
-                        "\tconcat_ws('', t.typname, SUBSTRING(format_type(a.atttypid, a.atttypmod) from '\\(.*\\)')) as dataType,\n" +
-                        "\td.description columnComment,\n" +
+                        "\ta.attname as columnName,\n" +
+                        "\tformat_type(a.atttypid, a.atttypmod) as datatype,\n" +
+                        "\tcol_description(a.attrelid, a.attnum) as columnComment,\n" +
+                        "\tcase\n" +
+                        "\t\twhen a.attnotnull then 'false'\n" +
+                        "\t\telse 'true'\n" +
+                        "\tend as nullAbled,\n" +
                         "\tcase\n" +
                         "\t\twhen a.attname=f.attname then 'PRI'\n" +
                         "\t\telse ''\n" +
                         "\tend as columnKey\n" +
                         "from\n" +
-                        "\tpg_class c,\n" +
-                        "\tpg_attribute a,\n" +
-                        "\tpg_type t,\n" +
-                        "\tpg_description d\n" +
+                        "\tpg_class as c,\n" +
+                        "\tpg_attribute as a\n" +
                         "left join (\n" +
                         "\tselect\n" +
                         "\t\tpg_attribute.attname\n" +
@@ -194,7 +215,7 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
                         "\t\tpg_class,\n" +
                         "\t\tpg_attribute\n" +
                         "\twhere\n" +
-                        "\t\tpg_class.oid = ? :: regclass\n" +
+                        "\t\tpg_class.oid = 'tank_info' :: regclass\n" +
                         "\t\tand pg_index.indrelid = pg_class.oid\n" +
                         "\t\tand pg_attribute.attrelid = pg_class.oid\n" +
                         "\t\tand pg_attribute.attnum = any (pg_index.indkey)\n" +
@@ -202,12 +223,8 @@ public class GenerateCodeServiceImpl implements GenerateCodeService {
                         "\t1=1\n" +
                         "where\n" +
                         "\tc.relname = ?\n" +
-                        "\tand a.attnum>0\n" +
                         "\tand a.attrelid = c.oid\n" +
-                        "\tand a.atttypid = t.oid\n" +
-                        "\tand d.objoid = a.attrelid\n" +
-                        "\tand d.objsubid = a.attnum";
-                params.add(tableName);
+                        "\tand a.attnum>0";
                 params.add(tableName);
                 break;
             default:

@@ -3,6 +3,7 @@ package $!{package}.$!{moduleName}.entity;
 #if($!{hasBigDecimal})
 import java.math.BigDecimal;
 #end
+import java.time.LocalDateTime;
 import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.*;
@@ -32,13 +33,13 @@ public class $!{className}Entity implements Serializable {
     /**
      * $!column.comments
      */
-    @Column(name = "$!{column.columnName}", nullable = false)
     @ApiModelProperty(value = "$!column.comments")
     #if($!column.columnName == $!pk.columnName)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long $!column.lowerAttrName;
     #else
+    @Column(name = "$!{column.columnName}", nullable = $!{column.nullAbled})
     private $!column.attrType $!column.lowerAttrName;
     #end
 

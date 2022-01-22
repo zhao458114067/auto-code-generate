@@ -17,7 +17,7 @@ import $!{package}.$!{moduleName}.entity.$!{className}Entity;
  */
 @Slf4j
 @RestController
-@RequestMapping("/$!{moduleName}")
+@RequestMapping("/$!{mainPath}")
 @Api(description = "$!{className}Controller", tags = {"$!{comments}"})
 public class $!{className}Controller extends BaseControllerModel<$!{className}Entity, $!{className}Entity> {
 

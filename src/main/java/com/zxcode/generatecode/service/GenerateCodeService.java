@@ -5,6 +5,7 @@ import com.zxcode.generatecode.controller.vo.GenerateConfigVO;
 import com.zxcode.generatecode.vo.PageVO;
 import com.zxcode.generatecode.controller.vo.TableRequestVO;
 
+import java.net.URISyntaxException;
 import java.sql.SQLException;
 
 /**

@@ -1,0 +1,81 @@
+import request from '@/router/axios'
+
+/**
+ * 新增$!{comments}
+ * @param obj $!{comments}
+ */
+export function add$!{className}($!{lowerAttrName}) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}',
+        method: 'post',
+        data: $!{lowerAttrName}
+    })
+}
+
+/**
+ * 通过id删除$!{comments}
+ * @param ids 主键,多个逗号隔开
+ */
+export function del$!{className}(ids) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}/' + ids,
+        method: 'delete'
+    })
+}
+
+/**
+ * 修改$!{comments}
+ * @param obj $!{comments}
+ */
+export function put$!{className}($!{lowerAttrName}) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}',
+        method: 'put',
+        data: $!{lowerAttrName}
+    })
+}
+
+/**
+ * 分页查询$!{comments}
+ * @param query 分页查询条件
+ */
+export function findByPage(params) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}/findByPage',
+        method: 'get',
+        params: params
+    })
+}
+
+/**
+ * 全属性条件查询$!{comments}
+ * @param id 主键
+ */
+export function findAllByConditions(params) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}/findAll',
+        method: 'get',
+        params: params
+    })
+}
+
+/**
+ * 通过条件查询一个对象$!{comments}
+ */
+export function findByAttr(attr, condition) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}/' + attr + '/' + condition,
+        method: 'get'
+    })
+}
+
+/**
+ * 通过条件查询多个对象$!{comments}
+ */
+export function findByAttrs(attr, condition, conditionType) {
+    return request({
+        url: '/$!{mainPath}/$!{lowerAttrName}/list/' + attr + '/' + condition + '?conditionType=' + conditionType,
+        method: 'get'
+    })
+}
+

@@ -35,5 +35,10 @@ public class GenerateConfigVO {
      * 表备注
      */
     private String comments;
+
+    /**
+     * 路径名字
+     */
+    private String mainPath;
 }
 
